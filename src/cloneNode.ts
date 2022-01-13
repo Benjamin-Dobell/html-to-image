@@ -70,6 +70,18 @@ async function cloneChildren<T extends HTMLElement>(
     .then(() => clonedNode)
 }
 
+function deprioritizeWebkitComparator(a: string, b: string) {
+  if (a.startsWith('-webkit-')) {
+    if (!b.startsWith('-webkit-')) {
+      return -1
+    }
+  } else if (b.startsWith('-webkit-')) {
+    return 1
+  }
+
+  return 0
+}
+
 function cloneCSSStyle<T extends HTMLElement>(nativeNode: T, clonedNode: T) {
   const source = window.getComputedStyle(nativeNode)
   const target = clonedNode.style
@@ -78,17 +90,15 @@ function cloneCSSStyle<T extends HTMLElement>(nativeNode: T, clonedNode: T) {
     return
   }
 
-  if (source.cssText) {
-    target.cssText = source.cssText
-  } else {
-    toArray<string>(source).forEach((name) => {
+  toArray<string>(source)
+    .sort(deprioritizeWebkitComparator)
+    .forEach((name) => {
       target.setProperty(
         name,
         source.getPropertyValue(name),
         source.getPropertyPriority(name),
       )
     })
-  }
 }
 
 function cloneInputValue<T extends HTMLElement>(nativeNode: T, clonedNode: T) {

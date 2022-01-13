@@ -25,6 +25,55 @@ async function embedBackground<T extends HTMLElement>(
     })
 }
 
+async function embedBorderImage<T extends HTMLElement>(
+  clonedNode: T,
+  options: Options,
+): Promise<T> {
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      const source = clonedNode.style?.getPropertyValue('border-image-source')
+      if (!source) {
+        resolve(clonedNode)
+        return
+      }
+      Promise.resolve(source)
+        .then((cssString) => embedResources(cssString, null, options))
+        .then((cssString) => {
+          const priority = clonedNode.style.getPropertyPriority(
+            'border-image-source',
+          )
+          clonedNode.style.removeProperty('-webkit-border-image-source')
+          clonedNode.style.setProperty(
+            'border-image-source',
+            cssString,
+            priority,
+          )
+          return clonedNode
+        })
+        .then(resolve)
+        .catch(reject)
+    }),
+    new Promise((resolve, reject) => {
+      const source = clonedNode.style?.getPropertyValue('border-image')
+      if (!source) {
+        resolve(clonedNode)
+        return
+      }
+      Promise.resolve(source)
+        .then((cssString) => embedResources(cssString, null, options))
+        .then((cssString) => {
+          const priority = clonedNode.style.getPropertyPriority('border-image')
+          clonedNode.style.removeProperty('-webkit-border-image')
+          clonedNode.style.setProperty('border-image', cssString, priority)
+          return clonedNode
+        })
+        .then(resolve)
+        .catch(reject)
+    }),
+  ])
+  return clonedNode
+}
+
 async function embedImageNode<T extends HTMLElement | SVGImageElement>(
   clonedNode: T,
   options: Options,
@@ -88,6 +137,7 @@ export async function embedImages<T extends HTMLElement>(
 
   return Promise.resolve(clonedNode)
     .then((node) => embedBackground(node, options))
+    .then((node) => embedBorderImage(node, options))
     .then((node) => embedImageNode(node, options))
     .then((node) => embedChildren(node, options))
 }

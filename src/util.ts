@@ -178,15 +178,37 @@ export function canvasToBlob(
   })
 }
 
-export function createImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(img)
-    img.onerror = reject
-    img.crossOrigin = 'anonymous'
-    img.decoding = 'sync'
-    img.src = url
-  })
+export async function createImage(url: string): Promise<HTMLImageElement> {
+  const img = new Image()
+
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+      img.crossOrigin = 'anonymous'
+      img.decoding = 'sync'
+      img.src = url
+    }),
+    new Promise<void>((resolve, reject) => {
+      // Irrespective of 'sync' decoding, Safari's <img> load event currently fires before loading
+      // has completed when an SVG src is provided. Thus we additionally track the load event of an
+      // <embed> element, which does function correctly in Safari.
+      const loadingProxy = document.createElement('embed')
+      loadingProxy.type = 'image/svg+xml'
+      loadingProxy.width = '0'
+      loadingProxy.height = '0'
+      loadingProxy.onload = () => {
+        document.body.removeChild(loadingProxy)
+        resolve()
+      }
+      loadingProxy.onabort = reject
+      loadingProxy.onerror = reject
+      loadingProxy.src = url
+      document.body.appendChild(loadingProxy)
+    }),
+  ])
+
+  return img
 }
 
 export async function svgToDataURL(svg: SVGElement): Promise<string> {

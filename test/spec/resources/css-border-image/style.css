@@ -1,0 +1,10 @@
+#dom-node {
+  width: 100px;
+  height: 100px;
+}
+.with-border-image {
+  background: red;
+  border-image: url(/base/test/spec/resources/images/image.jpeg) 0 fill;
+  width: 100px;
+  height: 100px;
+}

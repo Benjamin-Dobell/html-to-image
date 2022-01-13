@@ -190,6 +190,16 @@ describe('html to image', () => {
         .catch(done)
     })
 
+    it('should render border images', (done) => {
+      Helper.bootstrap(
+        'css-border-image/node.html',
+        'css-border-image/style.css',
+      )
+        .then(Helper.assertTextRendered(['JPG']))
+        .then(done)
+        .catch(done)
+    })
+
     it('should render user input from <input>', (done) => {
       const text = 'USER INPUT'
       Helper.bootstrap('input/node.html', 'input/style.css')
