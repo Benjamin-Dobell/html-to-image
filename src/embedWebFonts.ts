@@ -121,6 +121,10 @@ async function getCSSRules(
   const ret: CSSStyleRule[] = []
   const deferreds: Promise<number | void>[] = []
 
+  const inlineSheet =
+    styleSheets.find((a) => a.href == null) || document.styleSheets[0]
+  const effectiveSheets = [inlineSheet]
+
   // First loop inlines imports
   styleSheets.forEach((sheet) => {
     if ('cssRules' in sheet) {
@@ -159,9 +163,8 @@ async function getCSSRules(
             }
           },
         )
+        effectiveSheets.push(sheet)
       } catch (e) {
-        const inline =
-          styleSheets.find((a) => a.href == null) || document.styleSheets[0]
         if (sheet.href != null) {
           deferreds.push(
             fetchCSS(sheet.href)
@@ -170,7 +173,7 @@ async function getCSSRules(
               )
               .then((cssText) =>
                 parseCSS(cssText).forEach((rule) => {
-                  inline.insertRule(rule, inline.cssRules.length)
+                  inlineSheet.insertRule(rule, inlineSheet.cssRules.length)
                 }),
               )
               .catch((err) => {
@@ -186,7 +189,7 @@ async function getCSSRules(
 
   return Promise.all(deferreds).then(() => {
     // Second loop parses rules
-    styleSheets.forEach((sheet) => {
+    effectiveSheets.forEach((sheet) => {
       if ('cssRules' in sheet) {
         try {
           toArray<CSSStyleRule>(sheet.cssRules).forEach(
