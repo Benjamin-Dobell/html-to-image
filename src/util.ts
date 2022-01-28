@@ -178,6 +178,13 @@ export function canvasToBlob(
   })
 }
 
+export function getImageSize(node: HTMLElement, options: Options = {}) {
+  const width = options.width || getNodeWidth(node)
+  const height = options.height || getNodeHeight(node)
+
+  return { width, height }
+}
+
 export async function createImage(url: string): Promise<HTMLImageElement> {
   const img = new Image()
 
@@ -209,6 +216,66 @@ export async function createImage(url: string): Promise<HTMLImageElement> {
   ])
 
   return img
+}
+
+const dimensionCanvasLimit = 16384 // as per https://developer.mozilla.org/en-US/docs/Web/HTML/Element/canvas#maximum_canvas_size
+
+export function checkCanvasDimensions(canvas: HTMLCanvasElement) {
+  if (
+    canvas.width > dimensionCanvasLimit ||
+    canvas.height > dimensionCanvasLimit
+  ) {
+    if (
+      canvas.width > dimensionCanvasLimit &&
+      canvas.height > dimensionCanvasLimit
+    ) {
+      if (canvas.width > canvas.height) {
+        canvas.height *= dimensionCanvasLimit / canvas.width
+        canvas.width = dimensionCanvasLimit
+      } else {
+        canvas.width *= dimensionCanvasLimit / canvas.height
+        canvas.height = dimensionCanvasLimit
+      }
+    } else if (canvas.width > dimensionCanvasLimit) {
+      canvas.height *= dimensionCanvasLimit / canvas.width
+      canvas.width = dimensionCanvasLimit
+    } else {
+      canvas.width *= dimensionCanvasLimit / canvas.height
+      canvas.height = dimensionCanvasLimit
+    }
+  }
+}
+
+export function imageToCanvas(
+  node: HTMLElement,
+  img: HTMLImageElement,
+  options: Options = {},
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')!
+  const ratio = options.pixelRatio || getPixelRatio()
+  const { width, height } = getImageSize(node, options)
+
+  const canvasWidth = options.canvasWidth || width
+  const canvasHeight = options.canvasHeight || height
+
+  canvas.width = canvasWidth * ratio
+  canvas.height = canvasHeight * ratio
+
+  if (!options.skipAutoScale) {
+    checkCanvasDimensions(canvas)
+  }
+  canvas.style.width = `${canvasWidth}`
+  canvas.style.height = `${canvasHeight}`
+
+  if (options.backgroundColor) {
+    context.fillStyle = options.backgroundColor
+    context.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
+  context.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+  return canvas
 }
 
 export async function svgToDataURL(svg: SVGElement): Promise<string> {
