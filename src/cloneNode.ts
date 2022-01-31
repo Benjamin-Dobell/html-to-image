@@ -126,17 +126,22 @@ async function decorate<T extends HTMLElement>(
     .then(() => clonedNode)
 }
 
-export async function cloneNode<T extends HTMLElement>(
-  node: T,
+export async function cloneNode(
+  node: HTMLElement,
   options: Options,
   isRoot?: boolean,
-): Promise<T | null> {
+): Promise<HTMLElement | null> {
   if (!isRoot && options.filter && !options.filter(node)) {
     return Promise.resolve(null)
   }
 
-  return Promise.resolve(node)
-    .then((clonedNode) => cloneSingleNode(clonedNode, options) as Promise<T>)
-    .then((clonedNode) => cloneChildren(node, clonedNode, options))
-    .then((clonedNode) => decorate(node, clonedNode))
+  let clonedNode = options.clone ? await options.clone(node) : null
+
+  if (!clonedNode) {
+    clonedNode = await cloneSingleNode(node, options)
+  }
+
+  return Promise.resolve(clonedNode)
+    .then((targetNode) => cloneChildren(node, targetNode, options))
+    .then((targetNode) => decorate(node, targetNode))
 }
