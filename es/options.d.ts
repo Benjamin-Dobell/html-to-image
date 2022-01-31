@@ -30,6 +30,13 @@ export interface Options {
      */
     filter?: (domNode: HTMLElement) => boolean;
     /**
+     * A function taking a DOM node as an argument. Should return a promise
+     * resolving to a newly created DOM node that will be used in place of the
+     * original for the purpose of image generation. Alternatively, null may be
+     * returned, in which case the default cloning logic will be utilized.
+     */
+    clone?: (domNode: HTMLElement) => null | Promise<null | HTMLElement>;
+    /**
      * A number between `0` and `1` indicating image quality (e.g. 0.92 => 92%)
      * of the JPEG image.
      */

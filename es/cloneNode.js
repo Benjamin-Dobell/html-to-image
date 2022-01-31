@@ -109,10 +109,13 @@ export function cloneNode(node, options, isRoot) {
         if (!isRoot && options.filter && !options.filter(node)) {
             return Promise.resolve(null);
         }
-        return Promise.resolve(node)
-            .then((clonedNode) => cloneSingleNode(clonedNode, options))
-            .then((clonedNode) => cloneChildren(node, clonedNode, options))
-            .then((clonedNode) => decorate(node, clonedNode));
+        let clonedNode = options.clone ? yield options.clone(node) : null;
+        if (!clonedNode) {
+            clonedNode = yield cloneSingleNode(node, options);
+        }
+        return Promise.resolve(clonedNode)
+            .then((targetNode) => cloneChildren(node, targetNode, options))
+            .then((targetNode) => decorate(node, targetNode));
     });
 }
 //# sourceMappingURL=cloneNode.js.map
